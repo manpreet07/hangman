@@ -62,7 +62,7 @@ class Game(ndb.Model):
         the player lost."""
         self.game_over = True
         self.put()
-        # Add the game to the score 'board'
+        # Update Score
         if won:
             score = Score(user=self.user, date=date.today(),
                           guesses=self.attempts_allowed - self.attempts_remaining)
