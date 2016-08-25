@@ -1,5 +1,10 @@
 #Hangman API
 
+###Instructions
+
+---
+
+
 
 ###Endpoints Included:
 
