@@ -100,26 +100,30 @@ class HangmanApi(remote.Service):
 
         target_list = list(game.target)
 
-        if game.progress != target_list:
-          if request.guess not in game.progress:
-            if request.guess in target_list and request.guess not in game.letters_used:
-              for key, val in enumerate(target_list):
-                if val == request.guess:
-                  game.progress[key] = request.guess
-              game.put()
-              return game.to_form('Your guess is correct!')
-            elif request.guess not in target_list and request.guess not in game.letters_used:
-              game.attempts_remaining -= 1
-              if "_" in game.letters_used:
-                _index = game.letters_used.index("_")
-                game.letters_used[_index] = request.guess
-              game.put()
-              return game.to_form('Your guess is not correct!')
+        if game.attempts_remaining > 0:
+          if game.progress != target_list:
+            if request.guess not in game.progress:
+              if request.guess in target_list and request.guess not in game.letters_used:
+                for key, val in enumerate(target_list):
+                  if val == request.guess:
+                    game.progress[key] = request.guess
+                game.put()
+                return game.to_form('Your guess is correct!')
+              elif request.guess not in target_list and request.guess not in game.letters_used:
+                game.attempts_remaining -= 1
+                if "_" in game.letters_used:
+                  _index = game.letters_used.index("_")
+                  game.letters_used[_index] = request.guess
+                game.put()
+                return game.to_form('Your guess is not correct!')
+            else:
+              return game.to_form('Already used!')
           else:
-            return game.to_form('Already used!')
+            game.end_game(True)
+            return game.to_form('You win!')
         else:
-          game.end_game(True)
-          return game.to_form('You win!')
+          game.end_game(False)
+          return game.to_form('You loose!')
 
     @endpoints.method(response_message=ScoreForms,
                       path='scores',
