@@ -47,11 +47,10 @@ class Game(ndb.Model):
         game.put()
         return game
 
-    def cancel_game(self, game_over=True):
+    def cancel_the_game(self):
         """Cancel the game."""
-        if game_over:
-            self.game_canceled = True
-            self.put()
+        self.game_canceled = True
+        self.put()
 
     def to_form(self, message):
         """Returns a GameForm representation of the Game"""
@@ -138,5 +137,5 @@ class StringMessage(messages.Message):
 
 
 class CancelGameForm(messages.Message):
-    """Used to create a new game"""
+    """Used to cancel game"""
     urlsafe_key = messages.StringField(1, required=True)

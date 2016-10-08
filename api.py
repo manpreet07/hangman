@@ -19,7 +19,7 @@ from utils import get_by_urlsafe
 sys.path.insert(0, 'libs')
 
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
-CANCEL_GAME_REQUEST = endpoints.ResourceContainer(CancelGameForm)
+CANCEL_GAME_REQUEST = endpoints.ResourceContainer(urlsafe_game_key=messages.StringField(1),)
 GET_GAME_REQUEST = endpoints.ResourceContainer(urlsafe_game_key=messages.StringField(1), )
 MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MakeMoveForm, urlsafe_game_key=messages.StringField(1), )
 USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1), email=messages.StringField(2))
@@ -167,14 +167,18 @@ class HangmanApi(remote.Service):
         return ScoreForm(games_played=[score.games_played for score in scores])
 
     @endpoints.method(request_message=CANCEL_GAME_REQUEST,
-                      response_message=CancelGameForm,
+                      response_message=GameForm,
                       path='games/{urlsafe_game_key}/cancel_game',
                       name='cancel_game',
                       http_method='PUT')
     def cancel_game(self, request):
         """Cancel Game"""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
-        game.cancel_game(game.game_over)
+        if game.game_over:
+            return game.to_form("Game already over")
+        else:
+            game.cancel_the_game()
+            return game.to_form("Game Canceled")
 
 
     # @endpoints.method(request_message=USER_REQUEST,
