@@ -24,6 +24,7 @@ class Game(ndb.Model):
     letters_used = ndb.StringProperty(repeated=True)
     game_over = ndb.BooleanProperty(required=True, default=False)
     user = ndb.KeyProperty(required=True, kind='User')
+    game_canceled = ndb.BooleanProperty(required=True, default=False)
 
     @classmethod
     def new_game(cls, user):
@@ -41,9 +42,15 @@ class Game(ndb.Model):
                     attempts_remaining=len(RANDOM_WORD),
                     progress=_progress,
                     letters_used=_letters_used,
-                    game_over=False)
+                    game_over=False,
+                    game_canceled=False)
         game.put()
         return game
+
+    def cancel_the_game(self):
+        """Cancel the game."""
+        self.game_canceled = True
+        self.put()
 
     def to_form(self, message):
         """Returns a GameForm representation of the Game"""
@@ -55,6 +62,7 @@ class Game(ndb.Model):
         form.message = message
         form.progress = self.progress
         form.lettersUsed = self.letters_used
+        form.game_canceled = self.game_canceled
         return form
 
     def end_game(self, won=False):
@@ -97,6 +105,7 @@ class GameForm(messages.Message):
     user_name = messages.StringField(5, required=True)
     progress = messages.StringField(6, repeated=True)
     lettersUsed = messages.StringField(7, repeated=True)
+    game_canceled = messages.BooleanField(8, required=True)
 
 
 class NewGameForm(messages.Message):
@@ -125,3 +134,8 @@ class ScoreForms(messages.Message):
 class StringMessage(messages.Message):
     """StringMessage-- outbound (single) string message"""
     message = messages.StringField(1, required=True)
+
+
+class CancelGameForm(messages.Message):
+    """Used to cancel game"""
+    urlsafe_key = messages.StringField(1, required=True)
