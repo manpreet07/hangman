@@ -11,9 +11,9 @@ from google.appengine.api import memcache
 from google.appengine.api import taskqueue
 from protorpc import remote, messages
 
-from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, ScoreForms, GameForms
+from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, ScoreForms, GameForms, HistoryForms
 
-from models import User, Game, Score
+from models import User, Game, Score, History
 from utils import get_by_urlsafe
 
 sys.path.insert(0, 'libs')
@@ -90,7 +90,6 @@ class HangmanApi(remote.Service):
     def make_move(self, request):
         """Makes a move. Returns a game state with message"""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
-
         if game.game_over:
             return game.to_form('Game already over!')
         if game.game_canceled:
@@ -105,6 +104,7 @@ class HangmanApi(remote.Service):
                         for key, val in enumerate(target_list):
                             if val == request.guess:
                                 game.progress[key] = request.guess
+                        game.post_transaction(request.guess, "Your guess is correct!")
                         game.put()
                         return game.to_form('Your guess is correct!')
                     elif request.guess not in target_list and request.guess not in game.letters_used:
@@ -112,6 +112,7 @@ class HangmanApi(remote.Service):
                         if "_" in game.letters_used:
                             _index = game.letters_used.index("_")
                             game.letters_used[_index] = request.guess
+                        game.post_transaction(request.guess, "Your guess is not correct!")
                         game.put()
                         return game.to_form('Your guess is not correct!')
                 else:
@@ -207,13 +208,15 @@ class HangmanApi(remote.Service):
         scores = Score.query().order(-Score.winning_percentage)
         return ScoreForms(items=[score.get_ranking() for score in scores])
 
-    # @endpoints.method(request_message=USER_REQUEST,
-    #                   response_message=ScoreForms,
-    #                   path='scores/user/{user_name}/history',
-    #                   name='get_game_history',
-    #                   http_method='GET')
-    # def get_game_history(self, request):
-    #     return ""
+    @endpoints.method(request_message=GET_GAME_REQUEST,
+                      response_message=HistoryForms,
+                      path='games/{urlsafe_game_key}/history',
+                      name='get_game_history',
+                      http_method='GET')
+    def get_game_history(self, request):
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        history = History.query(History.game == game.key)
+        return HistoryForms(items=[transaction.get_history() for transaction in history])
 
     @staticmethod
     def _cache_average_attempts():

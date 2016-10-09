@@ -20,7 +20,7 @@ class SendReminderEmail(webapp2.RequestHandler):
         game = Game.query()
 
         for user in users:
-            if not game.game_over:
+            if game.game_over == False and game.game_canceled == False:
                 subject = 'This is a reminder!'
                 body = 'Hello {}, you have not finish your game yet! play Hangman now!'.format(user.name)
                 mail.send_mail('noreply@{}.appspotmail.com'.format(app_id),

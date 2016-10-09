@@ -3,8 +3,9 @@ entities used by the Game. Because these classes are also regular Python
 classes they can include methods (such as 'to_form' and 'new_game')."""
 
 from datetime import date
-from protorpc import messages
+from protorpc import messages, message_types
 from google.appengine.ext import ndb
+import datetime
 
 from random_words import RandomWords
 
@@ -65,6 +66,11 @@ class Game(ndb.Model):
         form.game_canceled = self.game_canceled
         return form
 
+    def post_transaction(self, guess, result):
+        history = History(date_time=datetime.datetime.now(), game=self.key, guess=guess, result=result)
+        history.put()
+        return history
+
     def end_game(self, won=False):
         """Ends the game - if won is True, the player won. - if won is False,
         the player lost."""
@@ -98,7 +104,7 @@ class Game(ndb.Model):
 class Score(ndb.Model):
     """Score object"""
     user = ndb.KeyProperty(required=True, kind='User')
-    date = ndb.DateProperty()
+    date = ndb.DateProperty(required=True)
     guesses = ndb.IntegerProperty(required=True)
     games_played = ndb.IntegerProperty(default=0,required=True)
     games_won = ndb.IntegerProperty(default=0,required=True)
@@ -110,16 +116,39 @@ class Score(ndb.Model):
     def get_ranking(self):
         return ScoreForm(user_name=self.user.get().name, winning_percentage=self.winning_percentage)
 
+
+class History(ndb.Model):
+    """History object"""
+    date_time = ndb.DateTimeProperty()
+    game = ndb.KeyProperty(required=True, kind='Game')
+    guess = ndb.StringProperty(required=True)
+    result = ndb.StringProperty(required=True)
+
+    def get_history(self):
+        return HistoryForm(date_time=self.date_time, guess=self.guess, result=self.result)
+
+
 class GameForm(messages.Message):
     """GameForm for outbound game state information"""
     urlsafe_key = messages.StringField(1, required=True)
-    attempts_remaining = messages.IntegerField(2, required=True)
     game_over = messages.BooleanField(3, required=True)
     message = messages.StringField(4, required=True)
     user_name = messages.StringField(5, required=True)
     progress = messages.StringField(6, repeated=True)
     lettersUsed = messages.StringField(7, repeated=True)
     game_canceled = messages.BooleanField(8, required=True)
+    attempts_remaining = messages.IntegerField(9, required=True)
+
+
+class HistoryForm(messages.Message):
+    date_time = message_types.DateTimeField(1, required=True)
+    guess = messages.StringField(2, required=True)
+    result = messages.StringField(3, required=True)
+
+
+class HistoryForms(messages.Message):
+    """Return multiple ScoreForms"""
+    items = messages.MessageField(HistoryForm, 1, repeated=True)
 
 
 class NewGameForm(messages.Message):
@@ -135,10 +164,11 @@ class MakeMoveForm(messages.Message):
 class ScoreForm(messages.Message):
     """ScoreForm for outbound Score information"""
     user_name = messages.StringField(1, required=True)
-    date = messages.StringField(2, required=True)
-    games_played = messages.IntegerField(3, required=True)
-    games_won = messages.IntegerField(4, required=True)
-    winning_percentage = messages.IntegerField(5, required=True)
+    date = messages.StringField(2, required=False)
+    games_played = messages.IntegerField(3, required=False)
+    games_won = messages.IntegerField(4, required=False)
+    winning_percentage = messages.IntegerField(5, required=False)
+
 
 class ScoreForms(messages.Message):
     """Return multiple ScoreForms"""
