@@ -12,24 +12,23 @@ from models import User, Game
 
 
 class SendReminderEmail(webapp2.RequestHandler):
+
     def get(self):
         """Send a reminder email to each User with an email about games.
         Called every hour using a cron job"""
         app_id = app_identity.get_application_id()
         users = User.query(User.email != None)
-        game = Game.query()
 
         for user in users:
+            game = Game.query(Game.user == user)
             if game.game_over == False and game.game_canceled == False:
                 subject = 'This is a reminder!'
                 body = 'Hello {}, you have not finish your game yet! play Hangman now!'.format(user.name)
-                mail.send_mail('noreply@{}.appspotmail.com'.format(app_id),
-                               user.email,
-                               subject,
-                               body)
+                mail.send_mail('noreply@{}.appspotmail.com'.format(app_id), user.email, subject, body)
 
 
 class UpdateAverageMovesRemaining(webapp2.RequestHandler):
+
     def post(self):
         """Update game listing announcement in memcache."""
         HangmanApi._cache_average_attempts()
