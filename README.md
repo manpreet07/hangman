@@ -1,12 +1,7 @@
 #Hangman API
 
-###Instructions
 
----
-
-
-
-###Endpoints Included:
+###Endpoints:
 
 ---
 
@@ -55,10 +50,57 @@
    - Path: 'scores/user/{user_name}'
    - Method: GET
    - Parameters: user_name
-   - Returns: ScoreForms.
+   - Returns: GameForms.
    - Description: Returns all Scores recorded by the provided player (unordered). Will raise a NotFoundException if the User does not exist.
 
+#####get_average_attempts_remaining
 
+   - Path: 'games/{urlsafe_game_key}/average_attempts'
+   - Method: GET
+   - Parameters: urlsafe_game_key
+   - Returns: GameForm.
+   - Description: Returns average attempts remaining for the game that is in progress.
+   
+#####get_user_games
+
+   - Path: 'scores/user/{user_name}/games'
+   - Method: GET
+   - Parameters: user_name
+   - Returns: GameForms.
+   - Description: Returns all Games recorded by the provided player.
+   
+#####cancel_game
+
+   - Path: 'games/{urlsafe_game_key}/cancel_game'
+   - Method: PUT
+   - Parameters: urlsafe_game_key
+   - Returns: GameForm.
+   - Description: Returns Game cancelled by the provided player.
+   
+#####get_high_scores
+
+   - Path: 'scores/high_scores'
+   - Method: GET
+   - Parameters: not required
+   - Returns: ScoreForms.
+   - Description: Returns High Scores of all the players.
+   
+#####get_user_rankings
+
+   - Path: 'scores/rankings'
+   - Method: GET
+   - Parameters: not required
+   - Returns: ScoreForms.
+   - Description: Returns User Rankings by winning percentage.
+   
+#####get_game_history
+
+   - Path: 'games/{urlsafe_game_key}/history'
+   - Method: GET
+   - Parameters: urlsafe_game_key
+   - Returns: HistoryForms.
+   - Description: Returns history of the game in progress.
+   
 ###Models Included:
 
 ---
@@ -81,6 +123,10 @@
 
 - Representation of a Game's state (urlsafe_key, attempts_remaining, game_over flag, message, user_name, progress, letters used).
 
+#####HistoryForm
+
+- Representation of a Game's history (date time, guess, result).
+
 #####NewGameForm
 
 - Used to create a new game (user_name)
@@ -101,3 +147,6 @@
 
 - General purpose String container.
 
+#####HistoryForms
+
+- Multiple HistoryForm container.
