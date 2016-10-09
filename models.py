@@ -80,21 +80,35 @@ class Game(ndb.Model):
             score = Score(user=self.user, date=date.today(),
                           guesses=self.attempts_allowed - self.attempts_remaining)
             score.games_played += 1
+        score.winning_percentage = (score.games_won / score.games_played) * 100
         score.put()
+
+    def game_status(self, message):
+        """Returns a GameForm representation of the Game"""
+        form = GameForm()
+        form.message = message
+        form.attempts_remaining = self.attempts_remaining
+        form.urlsafe_key = self.key.urlsafe()
+        form.user_name = self.user.get().name
+        form.game_over = self.game_over
+        form.game_canceled = self.game_canceled
+        return form
 
 
 class Score(ndb.Model):
     """Score object"""
     user = ndb.KeyProperty(required=True, kind='User')
-    date = ndb.DateProperty(required=True)
+    date = ndb.DateProperty()
     guesses = ndb.IntegerProperty(required=True)
     games_played = ndb.IntegerProperty(default=0,required=True)
     games_won = ndb.IntegerProperty(default=0,required=True)
+    winning_percentage = ndb.IntegerProperty(default=0)
 
-    def to_form(self):
-        return ScoreForm(user_name=self.user.get().name, games_played=self.games_played,
-                         date=str(self.date), games_won=self.games_won)
+    def get_score(self):
+        return ScoreForm(user_name=self.user.get().name, games_played=self.games_played, games_won=self.games_won)
 
+    def get_ranking(self):
+        return ScoreForm(user_name=self.user.get().name, winning_percentage=self.winning_percentage)
 
 class GameForm(messages.Message):
     """GameForm for outbound game state information"""
@@ -124,11 +138,16 @@ class ScoreForm(messages.Message):
     date = messages.StringField(2, required=True)
     games_played = messages.IntegerField(3, required=True)
     games_won = messages.IntegerField(4, required=True)
-
+    winning_percentage = messages.IntegerField(5, required=True)
 
 class ScoreForms(messages.Message):
     """Return multiple ScoreForms"""
     items = messages.MessageField(ScoreForm, 1, repeated=True)
+
+
+class GameForms(messages.Message):
+    """Return multiple ScoreForms"""
+    items = messages.MessageField(GameForm, 1, repeated=True)
 
 
 class StringMessage(messages.Message):
