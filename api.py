@@ -11,15 +11,14 @@ from google.appengine.api import memcache
 from google.appengine.api import taskqueue
 from protorpc import remote, messages
 
-from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, \
-    ScoreForms, ScoreForm, CancelGameForm
+from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, ScoreForms, GameForms
+
 from models import User, Game, Score
 from utils import get_by_urlsafe
 
 sys.path.insert(0, 'libs')
 
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
-CANCEL_GAME_REQUEST = endpoints.ResourceContainer(urlsafe_game_key=messages.StringField(1),)
 GET_GAME_REQUEST = endpoints.ResourceContainer(urlsafe_game_key=messages.StringField(1), )
 MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MakeMoveForm, urlsafe_game_key=messages.StringField(1), )
 USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1), email=messages.StringField(2))
@@ -59,6 +58,7 @@ class HangmanApi(remote.Service):
                 'A User with that name does not exist!')
         try:
             game = Game.new_game(user.key)
+
         except ValueError:
             raise endpoints.BadRequestException('Maximum must be greater '
                                                 'than minimum!')
@@ -129,7 +129,8 @@ class HangmanApi(remote.Service):
                       http_method='GET')
     def get_scores(self, request):
         """Return all scores"""
-        return ScoreForms(items=[score.to_form() for score in Score.query()])
+        scores = Score.query()
+        return ScoreForms(items=[score.get_score() for score in scores])
 
     @endpoints.method(request_message=USER_REQUEST,
                       response_message=ScoreForms,
@@ -143,30 +144,38 @@ class HangmanApi(remote.Service):
             raise endpoints.NotFoundException(
                 'A User with that name does not exist!')
         scores = Score.query(Score.user == user.key)
-        return ScoreForms(items=[score.to_form() for score in scores])
+        return ScoreForms(items=[score.get_score() for score in scores])
 
-    @endpoints.method(response_message=StringMessage,
-                      path='games/average_attempts',
+    @endpoints.method(request_message=GET_GAME_REQUEST,
+                      response_message=GameForm,
+                      path='games/{urlsafe_game_key}/average_attempts',
                       name='get_average_attempts_remaining',
                       http_method='GET')
-    def get_average_attempts(self):
+    def get_average_attempts_remaining(self, request):
         """Get the cached average moves remaining"""
-        return StringMessage(message=memcache.get(MEMCACHE_MOVES_REMAINING) or '')
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        if game.game_over:
+            return game.game_status("Game already over")
+        if game.game_canceled:
+            return game.game_status("Game already cancelled")
+        else:
+            return game.game_status("Game is in progress")
 
     @endpoints.method(request_message=USER_REQUEST,
-                      response_message=ScoreForm,
+                      response_message=GameForms,
                       path='scores/user/{user_name}/games',
                       name='get_user_games',
                       http_method='GET')
     def get_user_games(self, request):
+        """User Games"""
         user = User.query(User.name == request.user_name).get()
         if not user:
             raise endpoints.NotFoundException(
                 'A User with that name does not exist!')
-        scores = Score.query(Score.user == user.key)
-        return ScoreForm(games_played=[score.games_played for score in scores])
+        games = Game.query(Game.user == user.key)
+        return GameForms(items=[game.to_form('All Games') for game in games])
 
-    @endpoints.method(request_message=CANCEL_GAME_REQUEST,
+    @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=GameForm,
                       path='games/{urlsafe_game_key}/cancel_game',
                       name='cancel_game',
@@ -175,28 +184,29 @@ class HangmanApi(remote.Service):
         """Cancel Game"""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if game.game_over:
-            return game.to_form("Game already over")
+            return game.game_status("Game already over")
         else:
             game.cancel_the_game()
-            return game.to_form("Game Canceled")
+            return game.game_status("Game Canceled")
 
+    @endpoints.method(response_message=ScoreForms,
+                      path='scores/high_scores',
+                      name='get_high_scores',
+                      http_method='GET')
+    def get_high_scores(self, request):
+        """High scores"""
+        scores = Score.query().order(-Score.games_won)
+        return ScoreForms(items=[score.get_score() for score in scores])
 
-    # @endpoints.method(request_message=USER_REQUEST,
-    #                   response_message=ScoreForms,
-    #                   path='scores/high_scores',
-    #                   name='get_high_scores',
-    #                   http_method='GET')
-    # def get_high_scores(self, request):
-    #     return ""
-    #
-    # @endpoints.method(request_message=USER_REQUEST,
-    #                   response_message=ScoreForms,
-    #                   path='scores/rankings',
-    #                   name='get_user_rankings',
-    #                   http_method='GET')
-    # def get_user_rankings(self, request):
-    #     return ""
-    #
+    @endpoints.method(response_message=ScoreForms,
+                      path='scores/rankings',
+                      name='get_user_rankings',
+                      http_method='GET')
+    def get_user_rankings(self, request):
+        """User Rankings"""
+        scores = Score.query().order(-Score.winning_percentage)
+        return ScoreForms(items=[score.get_ranking() for score in scores])
+
     # @endpoints.method(request_message=USER_REQUEST,
     #                   response_message=ScoreForms,
     #                   path='scores/user/{user_name}/history',
