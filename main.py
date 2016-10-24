@@ -20,11 +20,12 @@ class SendReminderEmail(webapp2.RequestHandler):
         users = User.query(User.email != None)
 
         for user in users:
-            game = Game.query(Game.user == user)
-            if game.game_over == False and game.game_canceled == False:
-                subject = 'This is a reminder!'
-                body = 'Hello {}, you have not finish your game yet! play Hangman now!'.format(user.name)
-                mail.send_mail('noreply@{}.appspotmail.com'.format(app_id), user.email, subject, body)
+            games = Game.query(Game.user == user.key)
+            for game in games:
+                if game.game_over == False and game.game_canceled == False:
+                    subject = 'This is a reminder!'
+                    body = 'Hello {}, you have not finish your game yet! play Hangman now!'.format(user.name)
+                    mail.send_mail('noreply@{}.appspotmail.com'.format(app_id), user.email, subject, body)
 
 
 class UpdateAverageMovesRemaining(webapp2.RequestHandler):
@@ -35,7 +36,5 @@ class UpdateAverageMovesRemaining(webapp2.RequestHandler):
         self.response.set_status(204)
 
 
-app = webapp2.WSGIApplication([
-    ('/crons/send_reminder', SendReminderEmail),
-    ('/tasks/cache_average_attempts', UpdateAverageMovesRemaining),
-], debug=True)
+app = webapp2.WSGIApplication([('/crons/send_reminder', SendReminderEmail),
+                               ('/tasks/cache_average_attempts', UpdateAverageMovesRemaining),], debug=True)

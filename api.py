@@ -10,7 +10,7 @@ import endpoints
 from google.appengine.api import memcache
 from google.appengine.api import taskqueue
 from protorpc import remote, messages
-
+import re
 from models import StringMessage, NewGameForm, GameForm, MakeMoveForm, ScoreForms, GameForms, HistoryForms
 
 from models import User, Game, Score, History
@@ -98,29 +98,42 @@ class HangmanApi(remote.Service):
         target_list = list(game.target)
 
         if game.attempts_remaining > 0:
-            if game.progress != target_list:
-                if request.guess not in game.progress:
-                    if request.guess in target_list and request.guess not in game.letters_used:
-                        for key, val in enumerate(target_list):
-                            if val == request.guess:
-                                game.progress[key] = request.guess
+            if re.search('[a-zA-Z]', request.guess):
+                if len(request.guess) > 1:
+                    if request.guess == game.target:
                         game.post_transaction(request.guess, "Your guess is correct!")
-                        game.put()
-                        return game.to_form('Your guess is correct!')
-                    elif request.guess not in target_list and request.guess not in game.letters_used:
-                        game.attempts_remaining -= 1
-                        if "_" in game.letters_used:
-                            _index = game.letters_used.index("_")
-                            game.letters_used[_index] = request.guess
-                        game.post_transaction(request.guess, "Your guess is not correct!")
-                        game.put()
-                        return game.to_form('Your guess is not correct!')
+                        game.end_game(True)
+                        return game.to_form('You win!')
+                    else:
+                        game.post_transaction(request.guess, "Your guess is incorrect!")
+                        game.end_game(False)
+                        return game.to_form('You loose!')
+                if game.progress != target_list:
+                    if request.guess not in game.progress:
+                        if request.guess in target_list and request.guess not in game.letters_used:
+                            for key, val in enumerate(target_list):
+                                if val == request.guess:
+                                    game.progress[key] = request.guess
+                            game.post_transaction(request.guess, "Your guess is correct!")
+                            game.put()
+                            return game.to_form('Your guess is correct!')
+                        elif request.guess not in target_list and request.guess not in game.letters_used:
+                            game.attempts_remaining -= 1
+                            if "_" in game.letters_used:
+                                _index = game.letters_used.index("_")
+                                game.letters_used[_index] = request.guess
+                            game.post_transaction(request.guess, "Your guess is not correct!")
+                            game.put()
+                            return game.to_form('Your guess is not correct!')
+                    else:
+                        return game.to_form('Already used!')
                 else:
-                    return game.to_form('Already used!')
+                    game.end_game(True)
+                    return game.to_form('You win!')
             else:
-                game.end_game(True)
-                return game.to_form('You win!')
+                return game.to_form('Please enter only alphabets!')
         else:
+            game.post_transaction(request.guess, "Your guess is incorrect!")
             game.end_game(False)
             return game.to_form('You loose!')
 
@@ -173,7 +186,7 @@ class HangmanApi(remote.Service):
         if not user:
             raise endpoints.NotFoundException(
                 'A User with that name does not exist!')
-        games = Game.query(Game.user == user.key)
+        games = Game.query(Game.user == user.key, Game.game_canceled == False, Game.game_over == False)
         return GameForms(items=[game.to_form('All Games') for game in games])
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
