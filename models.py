@@ -125,7 +125,7 @@ class History(ndb.Model):
     result = ndb.StringProperty(required=True)
 
     def get_history(self):
-        return HistoryForm(date_time=self.date_time, guess=self.guess, result=self.result)
+        return HistoryForm(guess=self.guess, result=self.result)
 
 
 class GameForm(messages.Message):
@@ -141,7 +141,7 @@ class GameForm(messages.Message):
 
 
 class HistoryForm(messages.Message):
-    date_time = message_types.DateTimeField(1, required=True)
+    date_time = message_types.DateTimeField(1, required=False)
     guess = messages.StringField(2, required=True)
     result = messages.StringField(3, required=True)
 
