@@ -1,13 +1,9 @@
-# Design of Hangman API
+# Design of Hangman APIs
 
+Some of the following properties has been added to Hangman APIs to enhance its features.
 
-What additional properties did you add to your models and why?
-
-
-What were some of the trade-offs or struggles you faced when implementing the new game logic?
-
-
-These answers should be in a file Design.txt. Your responses can be in paragraph form or bulleted lists. This document should be around 500 words long.
-
-Be sure to reflect on your design decisions that went into creating this project. Add should these reflections in a separate file like design.md or design.txt.
-Be sure to reflect on any trade-offs or struggles you faced during this project.
+- [RandomWords 0.1.5](https://pypi.python.org/pypi/RandomWords/0.1.5) python library is added to the project that is used to generate random words when new game is created.
+- History model is added to track the history of the Game played by users.
+- Winning percentage is added to Score Model to get the players winning % for user rankings.
+- Additional Endpoints added to get user rankings, game history, and user high scores.
+- Game cancel feature is added to Game model so user can cancel their games if they want.
