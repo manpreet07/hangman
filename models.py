@@ -67,7 +67,7 @@ class Game(ndb.Model):
         return form
 
     def post_transaction(self, guess, result):
-        history = History(date_time=datetime.datetime.now(), game=self.key, guess=guess, result=result)
+        history = History(game=self.key, guess=guess, result=result)
         history.put()
         return history
 
@@ -119,7 +119,7 @@ class Score(ndb.Model):
 
 class History(ndb.Model):
     """History object"""
-    date_time = ndb.DateTimeProperty()
+    date_time = ndb.DateTimeProperty(auto_now_add=True)
     game = ndb.KeyProperty(required=True, kind='Game')
     guess = ndb.StringProperty(required=True)
     result = ndb.StringProperty(required=True)

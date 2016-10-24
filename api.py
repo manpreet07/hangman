@@ -228,7 +228,7 @@ class HangmanApi(remote.Service):
                       http_method='GET')
     def get_game_history(self, request):
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
-        history = History.query(History.game == game.key)
+        history = History.query(History.game == game.key).order(-History.date_time)
         return HistoryForms(items=[transaction.get_history() for transaction in history])
 
     @staticmethod
