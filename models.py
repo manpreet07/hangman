@@ -66,8 +66,8 @@ class Game(ndb.Model):
         form.game_canceled = self.game_canceled
         return form
 
-    def post_transaction(self, guess, result):
-        history = History(game=self.key, guess=guess, result=result)
+    def post_transaction(self, guess, result, game_over, game_canceled):
+        history = History(game=self.key, guess=guess, result=result, game_over=game_over, game_canceled=game_canceled)
         history.put()
         return history
 
@@ -123,9 +123,12 @@ class History(ndb.Model):
     game = ndb.KeyProperty(required=True, kind='Game')
     guess = ndb.StringProperty(required=True)
     result = ndb.StringProperty(required=True)
+    game_over = ndb.BooleanProperty(required=True)
+    game_canceled = ndb.BooleanProperty(required=True)
 
     def get_history(self):
-        return HistoryForm(guess=self.guess, result=self.result)
+        return HistoryForm(date_time=self.date_time, guess=self.guess, result=self.result, game_over=self.game_over,
+                           game_canceled=self.game_canceled)
 
 
 class GameForm(messages.Message):
@@ -141,9 +144,11 @@ class GameForm(messages.Message):
 
 
 class HistoryForm(messages.Message):
-    date_time = message_types.DateTimeField(1, required=False)
+    date_time = message_types.DateTimeField(1, required=True)
     guess = messages.StringField(2, required=True)
     result = messages.StringField(3, required=True)
+    game_over = messages.BooleanField(4, required=True)
+    game_canceled = messages.BooleanField(5, required=True)
 
 
 class HistoryForms(messages.Message):
