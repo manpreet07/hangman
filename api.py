@@ -96,18 +96,18 @@ class HangmanApi(remote.Service):
         target_list = list(game.target)
 
         if game.attempts_remaining < 1:
-            game.post_transaction(request.guess, "Your do not have any remaining")
+            game.post_transaction(request.guess, "Your do not have any remaining", True, False)
             game.end_game(True)
             return game.to_form('You loose!')
 
         if re.search('[a-zA-Z]', request.guess):
             if len(request.guess) > 1:
                 if request.guess == game.target:
-                    game.post_transaction(request.guess, "Your guess is correct!")
+                    game.post_transaction(request.guess, "You win!", True, False)
                     game.end_game(True)
                     return game.to_form('You win!')
                 else:
-                    game.post_transaction(request.guess, "Your guess is incorrect!")
+                    game.post_transaction(request.guess, "Your guess is incorrect!", False, False)
                     game.end_game(False)
                     return game.to_form('You loose!')
             if request.guess not in game.progress:
@@ -116,10 +116,11 @@ class HangmanApi(remote.Service):
                         if val == request.guess:
                             game.progress[key] = request.guess
                     if game.progress != target_list:
-                        game.post_transaction(request.guess, "Your guess is correct!")
+                        game.post_transaction(request.guess, "Your guess is correct!", False, False)
                         game.put()
                         return game.to_form('Your guess is correct!')
                     else:
+                        game.post_transaction(request.guess, "You win!", True, False)
                         game.end_game(True)
                         return game.to_form('You win!')
                 elif request.guess not in target_list and request.guess not in game.letters_used:
@@ -128,16 +129,18 @@ class HangmanApi(remote.Service):
                         _index = game.letters_used.index("_")
                         game.letters_used[_index] = request.guess
                     if game.attempts_remaining > 0:
-                        game.post_transaction(request.guess, "Your guess is not correct!")
+                        game.post_transaction(request.guess, "Your guess is not correct!", False, False)
                         game.put()
                         return game.to_form('Your guess is not correct!')
                     else:
-                        game.post_transaction(request.guess, "Your do not have any remaining")
+                        game.post_transaction(request.guess, "You loose!", True, False)
                         game.end_game(True)
                         return game.to_form('You loose!')
             else:
+                game.post_transaction(request.guess, "Already used!", False, False)
                 return game.to_form('Already used!')
         else:
+            game.post_transaction(request.guess, "Please enter only alphabets!", False, False)
             return game.to_form('Please enter only alphabets!')
 
     @endpoints.method(response_message=ScoreForms,
@@ -203,6 +206,7 @@ class HangmanApi(remote.Service):
         if game.game_over:
             return game.game_status("Game already over")
         else:
+            game.post_transaction("", "Game Canceled", False, True)
             game.cancel_the_game()
             return game.game_status("Game Canceled")
 
