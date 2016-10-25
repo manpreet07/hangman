@@ -1,5 +1,12 @@
 #Hangman API
 
+###Game Rules
+
+- Hangman APIs currently only support 1 player.
+- User can guess a single letter or a number.
+- If whole word is guessed wrong, the game will be over and user will loose the game.
+- If whole word is guesses correct, user wins.
+- When new game is created, remaining attempts are set to number of letters in the word. Once all attempts are over, user loose the game.
 
 ###Endpoints:
 
