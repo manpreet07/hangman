@@ -20,12 +20,11 @@ class SendReminderEmail(webapp2.RequestHandler):
         users = User.query(User.email != None)
 
         for user in users:
-            games = Game.query(Game.user == user.key)
-            for game in games:
-                if game.game_over == False and game.game_canceled == False:
-                    subject = 'This is a reminder!'
-                    body = 'Hello {}, you have not finish your game yet! play Hangman now!'.format(user.name)
-                    mail.send_mail('noreply@{}.appspotmail.com'.format(app_id), user.email, subject, body)
+            active_game = Game.query(Game.user == user.key, Game.game_over == False and Game.game_canceled == False)
+            if active_game:
+                subject = 'This is a reminder!'
+                body = 'Hello {}, you have not finish your game yet! play Hangman now!'.format(user.name)
+                mail.send_mail('noreply@{}.appspotmail.com'.format(app_id), user.email, subject, body)
 
 
 class UpdateAverageMovesRemaining(webapp2.RequestHandler):

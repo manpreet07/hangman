@@ -1,3 +1,4 @@
+from __future__ import division
 """models.py - This file contains the class definitions for the Datastore
 entities used by the Game. Because these classes are also regular Python
 classes they can include methods (such as 'to_form' and 'new_game')."""
@@ -5,7 +6,7 @@ classes they can include methods (such as 'to_form' and 'new_game')."""
 from datetime import date
 from protorpc import messages, message_types
 from google.appengine.ext import ndb
-import datetime
+
 
 from random_words import RandomWords
 
@@ -77,17 +78,44 @@ class Game(ndb.Model):
         self.game_over = True
         self.put()
         # Update Score
+        _scores = Score.query(Score.user == self.user)
+        _score_count = _scores.count()
+        _score = _scores.get()
+
+        guesses = self.attempts_allowed - self.attempts_remaining
+
         if won:
-            score = Score(user=self.user, date=date.today(),
-                          guesses=self.attempts_allowed - self.attempts_remaining)
-            score.games_played += 1
-            score.games_won += 1
+            if _score_count == 0:
+                score = Score(user=self.user, date=date.today(), guesses=guesses)
+                score.games_played = 1
+                score.games_won = 1
+                score.games_lost = 0
+                score.accuracy = 100.00
+                score.put()
+            else:
+                _score.guesses = _score.guesses + guesses
+                _score.date=date.today()
+                _score.games_played += 1
+                _score.games_won += 1
+                _score.games_lost = _score.games_lost
+                _score.accuracy = ((_score.games_won / _score.games_played) / _score.guesses) * 100
+                _score.put()
         else:
-            score = Score(user=self.user, date=date.today(),
-                          guesses=self.attempts_allowed - self.attempts_remaining)
-            score.games_played += 1
-        score.winning_percentage = (score.games_won / score.games_played) * 100
-        score.put()
+            if _score_count == 0:
+                score = Score(user=self.user, date=date.today(), guesses=guesses)
+                score.games_played = 1
+                score.games_won = 0
+                score.games_lost = 1
+                score.accuracy = 0.00
+                score.put()
+            else:
+                _score.date=date.today()
+                _score.guesses = _score.guesses + guesses
+                _score.games_played += 1
+                _score.games_won = _score.games_won
+                _score.games_lost += 1
+                _score.accuracy = ((_score.games_won / _score.games_played) / _score.guesses) * 100
+                _score.put()
 
     def game_status(self, message):
         """Returns a GameForm representation of the Game"""
@@ -106,15 +134,18 @@ class Score(ndb.Model):
     user = ndb.KeyProperty(required=True, kind='User')
     date = ndb.DateProperty(required=True)
     guesses = ndb.IntegerProperty(required=True)
-    games_played = ndb.IntegerProperty(default=0,required=True)
-    games_won = ndb.IntegerProperty(default=0,required=True)
-    winning_percentage = ndb.IntegerProperty(default=0)
+    games_played = ndb.IntegerProperty(required=True)
+    games_won = ndb.IntegerProperty(required=True)
+    accuracy = ndb.FloatProperty(required=True)
+    games_lost = ndb.IntegerProperty(required=True)
 
     def get_score(self):
-        return ScoreForm(user_name=self.user.get().name, games_played=self.games_played, games_won=self.games_won)
+        """Returns a ScoreForm"""
+        return ScoreForm(user_name=self.user.get().name, accuracy=self.accuracy, games_played = self.games_played,
+                         games_won=self.games_won, games_lost = self.games_lost, guesses = self.guesses)
 
     def get_ranking(self):
-        return ScoreForm(user_name=self.user.get().name, winning_percentage=self.winning_percentage)
+        return ScoreForm(user_name=self.user.get().name, accuracy=self.accuracy)
 
 
 class History(ndb.Model):
@@ -172,7 +203,9 @@ class ScoreForm(messages.Message):
     date = messages.StringField(2, required=False)
     games_played = messages.IntegerField(3, required=False)
     games_won = messages.IntegerField(4, required=False)
-    winning_percentage = messages.IntegerField(5, required=False)
+    games_lost = messages.IntegerField(5, required=False)
+    guesses = messages.IntegerField(6, required=False)
+    accuracy = messages.FloatField(7, required=False)
 
 
 class ScoreForms(messages.Message):
