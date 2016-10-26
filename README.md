@@ -3,10 +3,18 @@
 ###Game Rules
 
 - Hangman APIs currently only support 1 player.
-- User can guess a single letter or a number.
+- User can guess a single letter or a whole word.
 - If whole word is guessed wrong, the game will be over and user will loose the game.
 - If whole word is guesses correct, user wins.
 - When new game is created, remaining attempts are set to number of letters in the word. Once all attempts are over, user loose the game.
+
+###Scoring Rules
+
+- Game is scored based on the wins, losses, and accuracy of guesses.
+- Accuracy is calculated by diving wins by games played * 100 and divided by gusses.
+- Rankings are calculated based on the Accuracy of player.
+- high scores are calculated based on the Most wins of the user.
+
 
 ###Endpoints:
 
@@ -74,7 +82,7 @@
    - Method: GET
    - Parameters: user_name
    - Returns: GameForms.
-   - Description: Returns all Games recorded by the provided player.
+   - Description: Returns all Active Games recorded by the provided player.
    
 #####cancel_game
 
@@ -98,7 +106,7 @@
    - Method: GET
    - Parameters: not required
    - Returns: ScoreForms.
-   - Description: Returns User Rankings by winning percentage.
+   - Description: Returns User Rankings by accuracy.
    
 #####get_game_history
 

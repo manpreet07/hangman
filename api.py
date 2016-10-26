@@ -22,8 +22,8 @@ NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
 GET_GAME_REQUEST = endpoints.ResourceContainer(urlsafe_game_key=messages.StringField(1), )
 MAKE_MOVE_REQUEST = endpoints.ResourceContainer(MakeMoveForm, urlsafe_game_key=messages.StringField(1), )
 USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1), email=messages.StringField(2))
-
 MEMCACHE_MOVES_REMAINING = 'MOVES_REMAINING'
+NUMBER_OF_RESULTS = 5
 
 
 @endpoints.api(name='hangman', version='v1')
@@ -105,10 +105,14 @@ class HangmanApi(remote.Service):
                 if request.guess == game.target:
                     game.post_transaction(request.guess, "You win!", True, False)
                     game.end_game(True)
+                    for key, val in enumerate(target_list):
+                        game.progress[key] = val
                     return game.to_form('You win!')
                 else:
-                    game.post_transaction(request.guess, "Your guess is incorrect!", False, False)
+                    game.post_transaction(request.guess, "You loose!", True, False)
                     game.end_game(False)
+                    for key, val in enumerate(target_list):
+                        game.progress[key] = val
                     return game.to_form('You loose!')
             if request.guess not in game.progress:
                 if request.guess in target_list and request.guess not in game.letters_used:
@@ -155,10 +159,10 @@ class HangmanApi(remote.Service):
     @endpoints.method(request_message=USER_REQUEST,
                       response_message=ScoreForms,
                       path='scores/user/{user_name}',
-                      name='get_user_scores',
+                      name='get_user_score',
                       http_method='GET')
-    def get_user_scores(self, request):
-        """Returns all of an individual User's scores"""
+    def get_user_score(self, request):
+        """Returns individual User's score"""
         user = User.query(User.name == request.user_name).get()
         if not user:
             raise endpoints.NotFoundException(
@@ -217,6 +221,7 @@ class HangmanApi(remote.Service):
     def get_high_scores(self, request):
         """High scores"""
         scores = Score.query().order(-Score.games_won)
+        scores = scores.fetch(NUMBER_OF_RESULTS)
         return ScoreForms(items=[score.get_score() for score in scores])
 
     @endpoints.method(response_message=ScoreForms,
@@ -224,8 +229,8 @@ class HangmanApi(remote.Service):
                       name='get_user_rankings',
                       http_method='GET')
     def get_user_rankings(self, request):
-        """User Rankings"""
-        scores = Score.query().order(-Score.winning_percentage)
+        """User Rankings by accuracy"""
+        scores = Score.query().order(-Score.accuracy)
         return ScoreForms(items=[score.get_ranking() for score in scores])
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
