@@ -91,6 +91,7 @@ class Game(ndb.Model):
                 score.games_won = 1
                 score.games_lost = 0
                 score.accuracy = 100.00
+                score.score = 2
                 score.put()
             else:
                 _score.guesses = _score.guesses + guesses
@@ -99,6 +100,7 @@ class Game(ndb.Model):
                 _score.games_won += 1
                 _score.games_lost = _score.games_lost
                 _score.accuracy = ((_score.games_won / _score.games_played) / _score.guesses) * 100
+                _score.score += 2
                 _score.put()
         else:
             if _score_count == 0:
@@ -107,6 +109,7 @@ class Game(ndb.Model):
                 score.games_won = 0
                 score.games_lost = 1
                 score.accuracy = 0.00
+                score.score += 0
                 score.put()
             else:
                 _score.date=date.today()
@@ -115,6 +118,7 @@ class Game(ndb.Model):
                 _score.games_won = _score.games_won
                 _score.games_lost += 1
                 _score.accuracy = ((_score.games_won / _score.games_played) / _score.guesses) * 100
+                _score.score += 2
                 _score.put()
 
     def game_status(self, message):
@@ -138,14 +142,15 @@ class Score(ndb.Model):
     games_won = ndb.IntegerProperty(required=True)
     accuracy = ndb.FloatProperty(required=True)
     games_lost = ndb.IntegerProperty(required=True)
+    score = ndb.IntegerProperty(required=True)
 
     def get_score(self):
         """Returns a ScoreForm"""
-        return ScoreForm(user_name=self.user.get().name, accuracy=self.accuracy, games_played = self.games_played,
-                         games_won=self.games_won, games_lost = self.games_lost, guesses = self.guesses)
+        return ScoreForm(user_name=self.user.get().name, games_played=self.games_played, games_won=self.games_won,
+                         accuracy=self.accuracy, score=self.score)
 
     def get_ranking(self):
-        return ScoreForm(user_name=self.user.get().name, accuracy=self.accuracy)
+        return ScoreForm(user_name=self.user.get().name, games_won=self.games_won, score=self.score, accuracy=self.accuracy)
 
 
 class History(ndb.Model):
@@ -206,6 +211,7 @@ class ScoreForm(messages.Message):
     games_lost = messages.IntegerField(5, required=False)
     guesses = messages.IntegerField(6, required=False)
     accuracy = messages.FloatField(7, required=False)
+    score = messages.IntegerField(8, required=False)
 
 
 class ScoreForms(messages.Message):

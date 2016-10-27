@@ -114,8 +114,8 @@ class HangmanApi(remote.Service):
                     for key, val in enumerate(target_list):
                         game.progress[key] = val
                     return game.to_form('You loose!')
-            if request.guess not in game.progress:
-                if request.guess in target_list and request.guess not in game.letters_used:
+            if request.guess not in game.progress and request.guess not in game.letters_used:
+                if request.guess in target_list:
                     for key, val in enumerate(target_list):
                         if val == request.guess:
                             game.progress[key] = request.guess
@@ -127,7 +127,7 @@ class HangmanApi(remote.Service):
                         game.post_transaction(request.guess, "You win!", True, False)
                         game.end_game(True)
                         return game.to_form('You win!')
-                elif request.guess not in target_list and request.guess not in game.letters_used:
+                elif request.guess not in target_list:
                     game.attempts_remaining -= 1
                     if "_" in game.letters_used:
                         _index = game.letters_used.index("_")
