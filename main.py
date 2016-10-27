@@ -20,7 +20,7 @@ class SendReminderEmail(webapp2.RequestHandler):
         users = User.query(User.email != None)
 
         for user in users:
-            active_game = Game.query(Game.user == user.key, Game.game_over == False and Game.game_canceled == False)
+            active_game = Game.query(Game.user == user.key, Game.game_over == False, Game.game_canceled == False)
             if active_game:
                 subject = 'This is a reminder!'
                 body = 'Hello {}, you have not finish your game yet! play Hangman now!'.format(user.name)

@@ -7,7 +7,7 @@
 - Accuracy is added to Score Model to get the players Accuracy of guessing a word. More the guesses are lower the accuracy is
 - Additional Endpoints added to get user rankings, game history, and user high scores.
 - Game cancel feature is added to Game model so user can cancel their games if they want.
-- Game scoring model is added to calculate high scores and rankings etc.
+- Game scoring model is added to calculate high scores and users rankings etc.
 
 ###Some trade-Offs and struggles during the design phase.
 

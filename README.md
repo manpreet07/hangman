@@ -8,13 +8,13 @@
 - If whole word is guesses correct, user wins.
 - When new game is created, remaining attempts are set to number of letters in the word. Once all attempts are over, user loose the game.
 
+
 ###Scoring Rules
 
 - Game is scored based on the wins, losses, and accuracy of guesses.
-- Accuracy is calculated by diving wins by games played * 100 and divided by gusses.
+- Accuracy is calculated by diving wins by games played * 100 and divided by guesses.
 - Rankings are calculated based on the Accuracy of player.
-- high scores are calculated based on the Most wins of the user.
-
+- When User wins, 2 points per game is added as score in the scoring table.
 
 ###Endpoints:
 
